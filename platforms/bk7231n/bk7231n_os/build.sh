@@ -46,6 +46,16 @@ done
 
 # for i in `find ../../../components -type d`
 # do
+#         rm -rf $i/*.o
+# done
+
+# for i in `find beken378 -type d`
+# do
+#     rm -rf $i/*.o
+# done
+
+# for i in `find ../tuya_os_adapter -type d`
+# do
 #     rm -rf $i/*.o
 # done
 

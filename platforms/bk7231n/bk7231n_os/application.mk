@@ -7,8 +7,11 @@ ifeq ($(shell uname), Linux)
 else
   TOOLCHAIN_DIR := ../toolchain/windows
 endif
-ARM_GCC_TOOLCHAIN = $(TOOLCHAIN_DIR)/gcc-arm-none-eabi-4_9-2015q1/bin
-
+ifeq ($(shell uname -m),x86_64)
+	ARM_GCC_TOOLCHAIN = $(TOOLCHAIN_DIR)/gcc-arm-none-eabi-6-2017-q2-update/bin
+else
+	ARM_GCC_TOOLCHAIN = $(TOOLCHAIN_DIR)/gcc-arm-none-eabi-4_9-2015q1/bin
+endif
 CROSS_COMPILE = $(ARM_GCC_TOOLCHAIN)/arm-none-eabi-
 
 CFG_BLE_5X_VERSION ?= 1
