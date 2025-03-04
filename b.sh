@@ -1,1 +1,1 @@
-./build_app.sh apps/OpenBK7231N_App OpenBK7231N_App 2.0.7
+./build_app.sh apps/OpenBK7231T_App OpenBK7231T_App 2.0.7

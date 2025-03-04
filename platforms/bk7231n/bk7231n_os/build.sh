@@ -61,6 +61,10 @@ done
 #     rm -rf $i/*.o
 # done
 
+# rm -rf ${APP_PATH}/$APP_BIN_NAME/output/mbedtls-2.28.5/library/*.o
+# rm -rf Debug/obj/*.o
+# rm -rf Debug/obj/*.d
+
 if [ -z $CI_PACKAGE_PATH ]; then
     echo "not is ci build"
 else
