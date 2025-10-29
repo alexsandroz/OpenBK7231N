@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 APP_BIN_NAME=$1
 APP_VERSION=$2
 TARGET_PLATFORM=$3
@@ -25,6 +25,7 @@ if [ $SYSTEM = "Linux" ]; then
 	BEKEN_PACK=${TOOL_DIR}/beken_packager
 	RT_OTA_PACK_TOOL=${TOOL_DIR}/rt_ota_packaging_tool_cli
 	TY_PACKAGE=${TOOL_DIR}/package
+	ENCRYPT_NEW=${TOOL_DIR}/cmake_encrypt_crc
 else
 	TOOL_DIR=package_tool/windows
 	OTAFIX=${TOOL_DIR}/otafix.exe
@@ -32,6 +33,7 @@ else
 	BEKEN_PACK=${TOOL_DIR}/beken_packager.exe
 	RT_OTA_PACK_TOOL=${TOOL_DIR}/rt_ota_packaging_tool_cli.exe
 	TY_PACKAGE=${TOOL_DIR}/package.exe
+	ENCRYPT_NEW=${TOOL_DIR}/cmake_encrypt_crc.exe
 fi
 
 APP_PATH=../../../apps
@@ -78,6 +80,7 @@ cp ${APP_PATH}/$APP_BIN_NAME/output/$APP_VERSION/${APP_BIN_NAME}_${APP_VERSION}.
 
 cd tools/generate/
 
+# cp [sourceFile] [destinationFile]
 cp ${APP_BIN_NAME}_${APP_VERSION}.bin ${APP_BIN_NAME}_${APP_VERSION}_zeroKeys.bin
 
 if [ "$BUILD_MODE" = "zerokeys" ]; then
@@ -91,6 +94,7 @@ else
 	python mpytools.py bk7231n_bootloader_enc.bin ${APP_BIN_NAME}_${APP_VERSION}_enc.bin
 fi
 
+
 ./${BEKEN_PACK} config.json
 
 echo "End Combined"
@@ -103,7 +107,7 @@ rm ${APP_BIN_NAME}_${APP_VERSION}_enc_uart_1.00.bin
 #generate ota file
 echo "generate ota file"
 ./${RT_OTA_PACK_TOOL} -f ${APP_BIN_NAME}_${APP_VERSION}.bin -v $CURRENT_TIME -o ${APP_BIN_NAME}_${APP_VERSION}.rbl -p app -c gzip -s aes -k 0123456789ABCDEF0123456789ABCDEF -i 0123456789ABCDEF
-./${TY_PACKAGE} ${APP_BIN_NAME}_${APP_VERSION}.rbl ${APP_BIN_NAME}_UG_${APP_VERSION}.bin $APP_VERSION 
+./${TY_PACKAGE} ${APP_BIN_NAME}_${APP_VERSION}.rbl ${APP_BIN_NAME}_UG_${APP_VERSION}.bin ${APP_VERSION:0:31} 
 echo rm ${APP_BIN_NAME}_${APP_VERSION}.rbl
 rm ${APP_BIN_NAME}_${APP_VERSION}.bin
 rm ${APP_BIN_NAME}_${APP_VERSION}.cpr
@@ -138,11 +142,19 @@ cp ${APP_BIN_NAME}_QIO_${APP_VERSION}.bin ../../${APP_PATH}/$APP_BIN_NAME/output
 
 
 
+# 
+# 	BK7231M steps (zero keys)
+# 
 echo "Will do extra step - for zero keys/dogness"
+# Blank-start with zero keys bin
+# cp [sourceFile] [destinationFile]
 cp ${APP_BIN_NAME}_${APP_VERSION}_zeroKeys.bin ${APP_BIN_NAME}_${APP_VERSION}.bin
+# Apply keys
 echo "Will do zero keys encrypt"
+# This will generate ${APP_BIN_NAME}_${APP_VERSION}_enc.bin
 ./${ENCRYPT} ${APP_BIN_NAME}_${APP_VERSION}.bin 00000000 00000000 00000000 00000000 10000
-echo "Will do zero mpytools.py"
+echo "Will do zero mpytools.py to generate config.json"
+# python mpytools.py [BootloaderFile] [AppFile]
 python mpytools.py bk7231n_bootloader_enc.bin ${APP_BIN_NAME}_${APP_VERSION}_enc.bin
 echo "Will do zero BEKEN_PACK"
 ./${BEKEN_PACK} config.json
@@ -151,6 +163,37 @@ cp all_1.00.bin ${APP_BIN_NAME}_QIO_${APP_VERSION}.bin
 cp ${APP_BIN_NAME}_QIO_${APP_VERSION}.bin ../../${APP_PATH}/$APP_BIN_NAME/output/$APP_VERSION/OpenBK7231M_QIO_${APP_VERSION}.bin
 cp ${APP_BIN_NAME}_UA_${APP_VERSION}.bin ../../${APP_PATH}/$APP_BIN_NAME/output/$APP_VERSION/OpenBK7231M_UA_${APP_VERSION}.bin
 
+
+# 
+# 	UASCENT steps (4862379A 8612784B 85C5E258 75754528)
+# 
+# Copy blank bootloader just to have it  with "uascent" in name
+# cp [sourceFile] [destinationFile]
+cp bk7231n_bootloader.bin bk7231n_bootloader_uascent.bin
+# Call encrypt like Divadiow did
+# ENCRYPT_NEW is cmake_encrypt_crc.exe
+# this shall generate bk7231n_bootloader_uascent_enc.bin for bk7231n_bootloader_uascent.bin
+./${ENCRYPT_NEW} -enc bk7231n_bootloader_uascent.bin 4862379A 8612784B 85C5E258 75754528 -crc
+# Copy blank-start App with zero keys bin
+# cp [sourceFile] [destinationFile]
+cp ${APP_BIN_NAME}_${APP_VERSION}_zeroKeys.bin ${APP_BIN_NAME}_${APP_VERSION}.bin
+# Apply keys to the App
+echo "Will do UASCENT encrypt"
+# This will generate ${APP_BIN_NAME}_${APP_VERSION}_enc.bin
+./${ENCRYPT} ${APP_BIN_NAME}_${APP_VERSION}.bin 4862379A 8612784B 85C5E258 75754528 10000
+# Use mpytools.py to generate config.json for encrypted bootloader and encrypted app	
+echo "Will do UASCENT mpytools.py to generate config.json"
+# python mpytools.py [BootloaderFile] [AppFile]
+python mpytools.py bk7231n_bootloader_uascent_enc.bin ${APP_BIN_NAME}_${APP_VERSION}_enc.bin
+# Use Beken Pack on created config.json to combine bootloader and app together into all_1.00.bin
+echo "Will do UASCENT BEKEN_PACK"
+./${BEKEN_PACK} config.json
+echo "Will do UASCENT qio"
+cp all_1.00.bin ${APP_BIN_NAME}_QIO_${APP_VERSION}.bin
+cp ${APP_BIN_NAME}_QIO_${APP_VERSION}.bin ../../${APP_PATH}/$APP_BIN_NAME/output/$APP_VERSION/OpenBK7231N_UASCENT_QIO_${APP_VERSION}.bin
+cp ${APP_BIN_NAME}_UA_${APP_VERSION}.bin ../../${APP_PATH}/$APP_BIN_NAME/output/$APP_VERSION/OpenBK7231N_UASCENT_UA_${APP_VERSION}.bin
+	
+	
 
 echo "*************************************************************************"
 echo "*************************************************************************"
