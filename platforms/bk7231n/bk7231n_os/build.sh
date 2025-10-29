@@ -38,10 +38,10 @@ fi
 
 APP_PATH=../../../apps
 
-# for i in `find ${APP_PATH}/$APP_BIN_NAME/src -type d`
-# do
-#     rm -rf $i/*.o
-# done
+for i in `find ${APP_PATH}/$APP_BIN_NAME/src -type d`
+do
+    rm -rf $i/*.o
+done
 
 # for i in `find ../tuya_common -type d`
 # do
